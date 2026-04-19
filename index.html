@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DNF HeaMonGlo">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.jpg">
+<title>DNF HeaMonGlo</title>
+<style>
+  :root {
+    --bg:#0a0f1e; --surface:#111827; --surface2:#1a2236;
+    --border:rgba(110,180,255,0.12); --accent:#38bdf8;
+    --red:#f87171; --blue:#60a5fa; --green:#34d399; --amber:#fbbf24;
+    --muted:#64748b; --text:#e2e8f0; --text2:#94a3b8;
+    --radius:14px; --radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI',sans-serif;overscroll-behavior:none}
+
+  .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(10,15,30,0.95);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border)}
+  .topbar-logo{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--accent);flex-shrink:0}
+  .topbar-info{flex:1;min-width:0}
+  .topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+  .topbar-sub{font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-badge{display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:11px;color:var(--green);background:rgba(52,211,153,0.1);border:0.5px solid rgba(52,211,153,0.3);padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
+  .live-badge.offline{color:var(--muted);background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.25)}
+  .live-badge.offline .live-dot{background:var(--muted);animation:none}
+
+  .body{padding:14px;display:flex;flex-direction:column;gap:10px}
+
+  .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;font-size:11px;color:var(--text2);min-width:0}
+  .pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--muted);transition:background 0.3s}
+  .pdot.ok{background:var(--green)} .pdot.warn{background:var(--amber)}
+
+  .vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .vital-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 14px 14px;position:relative;overflow:hidden}
+  .vital-card.wide{grid-column:span 2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px}
+  .vital-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-accent,var(--accent));border-radius:var(--radius) var(--radius) 0 0}
+  .vital-label{font-size:10px;color:var(--text2);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px}
+  .vital-value{font-size:32px;font-weight:300;color:var(--text);line-height:1;letter-spacing:-0.02em}
+  .vital-unit{font-size:13px;color:var(--text2);margin-left:3px}
+  .vital-status{font-size:11px;margin-top:6px}
+  .s-ok{color:var(--green)} .s-warn{color:var(--amber)} .s-crit{color:var(--red)}
+  .no-reading{font-size:13px;color:var(--muted);margin-top:4px}
+  .mini-bar{height:2px;border-radius:2px;background:var(--surface2);margin-top:10px;overflow:hidden}
+  .mini-bar-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+  .bt-icon{font-size:40px;opacity:0.12;flex-shrink:0}
+
+  .section-label{font-size:10px;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;padding:2px 2px 0}
+
+  .env-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .env-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 14px}
+
+  .chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .chart-title{font-size:13px;font-weight:500;color:var(--text)}
+  .chart-updated{font-size:11px;color:var(--muted)}
+  .legend{display:flex;gap:14px;margin-bottom:10px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+  .legend-sq{width:8px;height:8px;border-radius:2px}
+
+  .runtime-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;display:flex;justify-content:space-between;align-items:center}
+  .runtime-lbl{font-size:12px;color:var(--text2)}
+  .runtime-val{font-size:14px;font-weight:500;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:0.05em}
+
+  .recovery-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .recovery-toggle{width:100%;background:none;border:none;color:var(--text2);display:flex;justify-content:space-between;align-items:center;padding:13px 14px;font-size:13px;cursor:pointer;text-align:left}
+  .recovery-toggle:hover{background:var(--surface2)}
+  .rtoggle-icon{font-size:11px;color:var(--muted);transition:transform 0.2s;display:inline-block}
+  .rtoggle-icon.open{transform:rotate(180deg)}
+  .recovery-body{display:none;padding:0 14px 14px}
+  .recovery-body.open{display:block}
+  .recovery-note{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+  .upload-btn{display:block;width:100%;padding:10px;border:0.5px dashed rgba(110,180,255,0.25);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);font-size:13px;text-align:center;cursor:pointer}
+  .upload-btn:hover{background:#1f2d45}
+  .tbl-wrap{overflow-x:auto;margin-top:12px}
+  table{width:100%;border-collapse:collapse;font-size:11px;min-width:360px}
+  th{padding:6px 8px;color:var(--text2);border-bottom:0.5px solid var(--border);font-weight:400;text-align:left}
+  td{padding:6px 8px;color:var(--text);border-bottom:0.5px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--surface2)}
+  .footnote{font-size:11px;color:var(--muted);text-align:center;padding:4px 0 6px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img class="topbar-logo" src="logo.jpg" alt="DNF">
+  <div class="topbar-info">
+    <div class="topbar-title">DNF HeaMonGlo</div>
+    <div class="topbar-sub" id="last-updated">Connecting to Firebase...</div>
+  </div>
+  <div class="live-badge offline" id="live-badge">
+    <div class="live-dot"></div>
+    <span id="live-label">Offline</span>
+  </div>
+</div>
+
+<div class="body">
+
+  <div class="status-row">
+    <div class="pill"><div class="pdot" id="dot-wifi"></div><span id="lbl-wifi">WiFi</span></div>
+    <div class="pill"><div class="pdot" id="dot-sd"></div><span id="lbl-sd">SD Card</span></div>
+    <div class="pill"><div class="pdot" id="dot-finger"></div><span id="lbl-finger">Finger</span></div>
+  </div>
+
+  <div class="vitals-grid">
+    <div class="vital-card" style="--card-accent:#f87171;">
+      <div class="vital-label">Heart Rate</div>
+      <div id="hr-val"><span class="no-reading">No Finger</span></div>
+      <div id="hr-status" class="vital-status"></div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="hr-bar" style="width:0%;background:#f87171;"></div></div>
+    </div>
+    <div class="vital-card" style="--card-accent:#60a5fa;">
+      <div class="vital-label">SpO2</div>
+      <div id="spo2-val"><span class="no-reading">No Finger</span></div>
+      <div id="spo2-status" class="vital-status"></div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="spo2-bar" style="width:0%;background:#60a5fa;"></div></div>
+    </div>
+    <div class="vital-card wide" style="--card-accent:#34d399;">
+      <div>
+        <div class="vital-label">Body Temperature</div>
+        <div id="bt-val"><span style="font-size:22px;font-weight:300;color:var(--muted)">--</span></div>
+        <div id="bt-status" class="vital-status"></div>
+      </div>
+      <div class="bt-icon">🌡</div>
+    </div>
+  </div>
+
+  <div class="section-label">Environment</div>
+  <div class="env-row">
+    <div class="env-card">
+      <div class="vital-label">Humidity</div>
+      <div><span class="vital-value" id="hum-val" style="font-size:26px">--</span><span class="vital-unit">%</span></div>
+    </div>
+    <div class="env-card">
+      <div class="vital-label">Area Temperature</div>
+      <div><span class="vital-value" id="room-val" style="font-size:26px">--</span><span class="vital-unit">°C</span></div>
+    </div>
+  </div>
+
+  <div class="section-label">Vitals Trend</div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Live chart</div>
+      <div class="chart-updated" id="chart-updated">--</div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-sq" style="background:#f87171"></div>Heart Rate (bpm)</div>
+      <div class="legend-item"><div class="legend-sq" style="background:#60a5fa"></div>SpO2 (%)</div>
+    </div>
+    <div style="position:relative;height:160px;">
+      <canvas id="chart" role="img" aria-label="Live heart rate and SpO2 trend chart">Live vitals trend.</canvas>
+    </div>
+  </div>
+
+  <div class="runtime-card">
+    <span class="runtime-lbl">Session Run Time</span>
+    <span class="runtime-val" id="runtime-val">--:--:--</span>
+  </div>
+
+  <div class="recovery-card">
+    <button class="recovery-toggle" onclick="toggleRecovery()">
+      <span>Offline Data Recovery</span>
+      <span class="rtoggle-icon" id="rtoggle-icon">▼</span>
+    </button>
+    <div class="recovery-body" id="recovery-body">
+      <div class="recovery-note">
+        Your device pushes data to Firebase automatically when WiFi is connected.
+        Use this only to review sessions recorded while offline —
+        upload the <strong style="color:var(--text)">data.csv</strong> file from your SD card.
+      </div>
+      <label class="upload-btn">
+        Upload data.csv from SD card
+        <input type="file" accept=".csv" id="csvInput" style="display:none">
+      </label>
+      <div class="tbl-wrap" id="tbl-wrap"></div>
+    </div>
+  </div>
+
+  <div class="footnote" id="poll-note">Polling Firebase every 5 s</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const DB="https://wearable-iot-medical-glove-default-rtdb.asia-southeast1.firebasedatabase.app/sensors.json";
+const MAX_PTS=20,hrHist=[],spo2Hist=[],lbls=[];
+let chart=null;
+
+function buildChart(){
+  chart=new Chart(document.getElementById('chart'),{
+    type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'HR',data:hrHist,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,0.07)',borderWidth:1.5,pointRadius:2,tension:0.4,fill:true,yAxisID:'yHR'},
+      {label:'SpO2',data:spo2Hist,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.07)',borderWidth:1.5,pointRadius:2,tension:0.4,fill:true,yAxisID:'ySPO2'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},
+      plugins:{legend:{display:false},tooltip:{bodyFont:{size:11},titleFont:{size:11}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:5},grid:{color:'rgba(255,255,255,0.04)'}},
+        yHR:{position:'left',min:40,max:180,ticks:{color:'#f87171',font:{size:10},stepSize:40},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'bpm',color:'#64748b',font:{size:10}}},
+        ySPO2:{position:'right',min:85,max:100,ticks:{color:'#60a5fa',font:{size:10},stepSize:5},grid:{display:false},title:{display:true,text:'%',color:'#64748b',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function ts(){return new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function setDot(id,s){document.getElementById(id).className='pdot'+(s==='ok'?' ok':s==='warn'?' warn':'')}
+function hrLabel(v){if(v<50)return['Bradycardia','s-warn'];if(v<=100)return['Normal','s-ok'];if(v<=120)return['Elevated','s-warn'];return['Tachycardia','s-crit']}
+function spo2Label(v){if(v>=95)return['Normal','s-ok'];if(v>=90)return['Low','s-warn'];return['Critical','s-crit']}
+function btLabel(v){if(v<35)return['Hypothermia','s-warn'];if(v<=37.5)return['Normal','s-ok'];if(v<=38.5)return['Low Fever','s-warn'];return['Fever','s-crit']}
+
+function render(d){
+  const now=ts();
+  const hr=d['1_HeartRate']||0,spo2=d['2_OxygenLevel']||0;
+  const bt=d['3_BodyTemp'],hum=d['4_Humidity'],room=d['4_AreaTemp'],up=d['5_Uptime']||'--:--:--';
+
+  document.getElementById('last-updated').textContent='Last updated '+now;
+  document.getElementById('live-badge').className='live-badge';
+  document.getElementById('live-label').textContent='Live';
+  document.getElementById('chart-updated').textContent='Updated '+now;
+
+  setDot('dot-wifi','ok'); document.getElementById('lbl-wifi').textContent='WiFi Connected';
+  setDot('dot-sd','ok');   document.getElementById('lbl-sd').textContent='SD Card Active';
+
+  const finger=hr>0||spo2>0;
+  setDot('dot-finger',finger?'ok':'');
+  document.getElementById('lbl-finger').textContent=finger?'Finger Reading...':'No Finger';
+
+  // HR
+  if(!finger){
+    document.getElementById('hr-val').innerHTML='<span class="no-reading">No Finger</span>';
+    document.getElementById('hr-status').innerHTML='';
+    document.getElementById('hr-bar').style.width='0%';
+  } else if(hr>0){
+    document.getElementById('hr-val').innerHTML='<span class="vital-value">'+hr+'</span><span class="vital-unit">bpm</span>';
+    const[l,c]=hrLabel(hr);
+    document.getElementById('hr-status').innerHTML='<span class="'+c+'">'+l+'</span>';
+    document.getElementById('hr-bar').style.width=Math.min(100,((hr-40)/140)*100)+'%';
+  } else {
+    document.getElementById('hr-val').innerHTML='<span class="no-reading">Reading...</span>';
+    document.getElementById('hr-status').innerHTML='';
+    document.getElementById('hr-bar').style.width='0%';
+  }
+
+  // SpO2
+  if(!finger){
+    document.getElementById('spo2-val').innerHTML='<span class="no-reading">No Finger</span>';
+    document.getElementById('spo2-status').innerHTML='';
+    document.getElementById('spo2-bar').style.width='0%';
+  } else if(spo2>0){
+    document.getElementById('spo2-val').innerHTML='<span class="vital-value">'+spo2+'</span><span class="vital-unit">%</span>';
+    const[l,c]=spo2Label(spo2);
+    document.getElementById('spo2-status').innerHTML='<span class="'+c+'">'+l+'</span>';
+    document.getElementById('spo2-bar').style.width=Math.min(100,((spo2-85)/15)*100)+'%';
+  } else {
+    document.getElementById('spo2-val').innerHTML='<span class="no-reading">Reading...</span>';
+    document.getElementById('spo2-status').innerHTML='';
+    document.getElementById('spo2-bar').style.width='0%';
+  }
+
+  // Body Temp
+  if(bt&&bt!=='--'&&!isNaN(parseFloat(bt))){
+    const btv=parseFloat(bt).toFixed(1);
+    document.getElementById('bt-val').innerHTML='<span class="vital-value" style="font-size:26px">'+btv+'</span><span class="vital-unit">°C</span>';
+    const[l,c]=btLabel(parseFloat(btv));
+    document.getElementById('bt-status').innerHTML='<span class="'+c+'">'+l+'</span>';
+  } else {
+    document.getElementById('bt-val').innerHTML='<span style="font-size:22px;font-weight:300;color:var(--muted)">--</span>';
+    document.getElementById('bt-status').innerHTML='';
+  }
+
+  document.getElementById('hum-val').textContent=hum?parseFloat(hum).toFixed(1):'--';
+  document.getElementById('room-val').textContent=room?parseFloat(room).toFixed(1):'--';
+  document.getElementById('runtime-val').textContent=up;
+
+  if(finger){
+    lbls.push(now);
+    hrHist.push(hr>0?hr:null);
+    spo2Hist.push(spo2>0?spo2:null);
+    if(lbls.length>MAX_PTS){lbls.shift();hrHist.shift();spo2Hist.shift()}
+    chart&&chart.update('none');
+  }
+}
+
+function fetchData(){
+  fetch(DB)
+    .then(r=>r.json())
+    .then(d=>{if(d)render(d);document.getElementById('poll-note').textContent='Polling Firebase every 5 s'})
+    .catch(()=>{
+      document.getElementById('live-badge').className='live-badge offline';
+      document.getElementById('live-label').textContent='Offline';
+      document.getElementById('last-updated').textContent='Connection lost — retrying...';
+      setDot('dot-wifi','warn');
+      document.getElementById('lbl-wifi').textContent='WiFi Offline';
+      setDot('dot-sd','');
+      document.getElementById('lbl-sd').textContent='SD Card';
+    });
+}
+
+function toggleRecovery(){
+  const b=document.getElementById('recovery-body'),i=document.getElementById('rtoggle-icon');
+  b.classList.toggle('open');i.classList.toggle('open');
+}
+
+document.getElementById('csvInput').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const lines=ev.target.result.trim().split('\n').filter(l=>l.trim());
+    const show=lines.slice(-20).reverse();
+    let html='<table><thead><tr><th>HR</th><th>SpO2</th><th>Body°C</th><th>Hum%</th><th>Area°C</th><th>Run Time</th></tr></thead><tbody>';
+    show.forEach(line=>{
+      const c=line.split(',');
+      const cols=[...c,...Array(6).fill('--')].slice(0,6);
+      html+='<tr>'+cols.map(v=>'<td>'+(v.trim()||'--')+'</td>').join('')+'</tr>';
+    });
+    html+='</tbody></table><div style="font-size:11px;color:var(--muted);margin-top:8px">Last '+show.length+' entries</div>';
+    document.getElementById('tbl-wrap').innerHTML=html;
+  };
+  reader.readAsText(file);
+});
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+buildChart();fetchData();setInterval(fetchData,5000);
+</script>
+</body>
+</html>
